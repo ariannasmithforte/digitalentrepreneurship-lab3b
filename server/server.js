@@ -21,6 +21,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
     auth: { persistSession: false, autoRefreshToken: false }
 });
 
+// Separate client for database queries (the messages table).
+// After /login, the client above keeps the user's session in memory and sends their token
+// instead of the secret key, so Row Level Security would block inserts. This client never
+// signs anyone in, so it always uses the secret key.
+const db = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+});
+
 const app = express();
 app.use(express.json());
 
@@ -98,6 +106,49 @@ app.post('/verify', async (req, res) => {
     } catch (error) {
         console.error('Verification error:', error);
         res.status(500).json({ success: false, message: 'Error verifying email' });
+    }
+});
+
+// ========================================================
+// Message Board Routes (messages table in Supabase)
+// ========================================================
+
+// Get the 20 newest messages
+app.get('/messages', async (req, res) => {
+    try {
+        const { data, error } = await db
+            .from('messages')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw error;
+
+        res.json({ success: true, messages: data });
+    } catch (error) {
+        console.error('Get messages error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error loading messages' });
+    }
+});
+
+// Save a new message
+app.post('/messages', async (req, res) => {
+    const { name, text } = req.body;
+    console.log(`Received new message from: ${name}`);
+
+    // Reject empty messages (missing, or only spaces)
+    if (!text || !text.trim()) {
+        return res.status(400).json({ success: false, message: 'Message cannot be empty.' });
+    }
+
+    try {
+        const { error } = await db.from('messages').insert({ name, text: text.trim() });
+        if (error) throw error;
+
+        res.json({ success: true, message: 'Message posted.' });
+    } catch (error) {
+        console.error('Post message error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error posting message' });
     }
 });
 

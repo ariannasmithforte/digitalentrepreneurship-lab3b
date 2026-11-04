@@ -149,3 +149,25 @@ button:hover {
     background: linear-gradient(135deg, #cc0000, #ff4444);
 }
 /* ADDED: Dashboard Styles Section - End */
+/* Message board list */
+.message-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+    text-align: left;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.message-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #ffd6e8;
+    word-wrap: break-word;
+}
+
+/* Timestamp under each message */
+.message-time {
+    display: block;
+    font-size: 11px;
+    color: #a0709f;
+}
